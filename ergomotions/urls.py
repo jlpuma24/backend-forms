@@ -7,9 +7,11 @@ from api.views import *
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/login', login, name='login'),
+    url(r'^api/charts', pieChart, name='pieChart'),
     url(r'^api/addCompany', addCompany, name='addCompany'),
     url(r'^api/editEmployee', editEmployee, name='editEmployee'),
     url(r'^api/addEmployee', addEmployee, name='addEmployee'),
+    url(r'^api/employeeReport', employeeReport, name='employeeReport'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

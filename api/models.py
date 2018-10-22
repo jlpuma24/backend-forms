@@ -100,9 +100,9 @@ YES_NO = (
 )
 
 HOW_MUCH_CIGARETTES = (
-    (0, '0'),
-    (1, '1'),
-    (2, '2'),
+    (0, 'De 1 a 5 cigarrillos'),
+    (1, 'De 6 a 15 cigarrillos'),
+    (2, '16 o mas cigarrillos'),
     (3, '3'),
     (4, '4'),
     (5, '5'),

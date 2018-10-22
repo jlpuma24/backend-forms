@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script>
+window.onload = function () {
+
+var options = {
+	title: {
+		text: "12. INDIQUE POR CUANTO TIEMPO SE PRESENTAN Y PERMANECEN ESTOS PROBLEMAS"
+	},
+	subtitles: [{
+		text: ""
+	}],
+	animationEnabled: true,
+	data: [{
+		type: "pie",
+		startAngle: 40,
+		toolTipContent: "<b>{label}</b>: {y}%",
+		showInLegend: "true",
+		legendText: "{label}",
+		indexLabelFontSize: 16,
+		indexLabel: "{label} - {y}%",
+		dataPoints: [
+			{ y: 48.36, label: "Menos de 24 horas" },
+			{ y: 26.85, label: "De manera permanente" },
+			{ y: 1.49, label: "De 8 a 30 días" },
+			{ y: 6.98, label: "De 1 a 7 dias" },
+			{ y: 6.53, label: "" }
+		]
+	}]
+};
+$("#chartContainer").CanvasJSChart(options);
+
+}
+</script>
+</head>
+<body>
+<div id="chartContainer" style="height: 370px; width: 100%;"></div>
+<script src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+<script src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
+</body>
+</html>
