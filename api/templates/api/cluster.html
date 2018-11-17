@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script>
+window.onload = function () {
+
+//Better to construct options first and then pass it as a parameter
+var options = {
+	animationEnabled: true,
+	title:{
+		text: "Cluster de variables: peso, fuma y horas laboradas"
+	},
+	axisY: {
+		suffix: "%"
+	},
+	toolTip: {
+		shared: true,
+		reversed: true
+	},
+	legend: {
+		reversed: true,
+		verticalAlign: "center",
+		horizontalAlign: "right"
+	},
+	data: [
+	{
+		type: "stackedColumn100",
+		name: "Obesidad grado 1",
+		showInLegend: true,
+		yValueFormatString: "#,##0\"%\"",
+		dataPoints: [
+		{ label: "1", y: 20 },
+		{ label: "2", y: 66 },
+		{ label: "3", y: 10 }
+		]
+	},
+	{
+		type: "stackedColumn100",
+		name: "Rango normal",
+		showInLegend: true,
+		yValueFormatString: "#,##0\"%\"",
+		dataPoints: [
+		{ label: "1", y: 43 },
+		{ label: "2", y: 12 },
+		{ label: "3", y: 50 }
+		]
+	},
+	{
+		type: "stackedColumn100",
+		name: "Sobrepeso",
+		showInLegend: true,
+		yValueFormatString: "#,##0\"%\"",
+		dataPoints: [
+		{ label: "1", y: 60 },
+		{ label: "2", y: 40 },
+		{ label: "3", y: 15 }
+		]
+	}
+	]
+};
+
+$("#chartContainer").CanvasJSChart(options);
+}
+</script>
+</head>
+<body>
+<div id="chartContainer" style="height: 370px; width: 100%;"></div>
+<script type="text/javascript" src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
+</body>
+</html>

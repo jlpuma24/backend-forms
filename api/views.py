@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import matplotlib
+matplotlib.use('Agg')
+
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.http.response import HttpResponse, Http404
@@ -5,6 +11,82 @@ from django.contrib.auth import authenticate
 from api.models import *
 import datetime
 import json
+from matplotlib import pylab
+from pylab import *
+import numpy as np
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import PIL, PIL.Image, StringIO
+
+@csrf_exempt
+def grapsHttpResponse(request, ageReport):
+    if request.method == "GET":
+        titleX = ''
+        titleGraph = ''
+        if int(ageReport) == 1:
+            titleX = 'Edad'
+            titleGraph = 'Edad'
+        elif int(ageReport) == 2:
+            titleX = 'Peso'
+            titleGraph = 'Peso'
+        elif int(ageReport) == 3:
+            titleX = 'Estatura'
+            titleGraph = 'Estatura'
+        elif int(ageReport) == 4:
+            titleX = 'IMC'
+            titleGraph = 'IMC'
+        elif int(ageReport) == 5:
+            titleX = 'Antiguedad en el cargo'
+            titleGraph = 'Antiguedad en el cargo'
+        elif int(ageReport) == 6:
+            titleX = 'EN SU TRABAJO ACTUAL, ¿CUANTAS HORAS TRABAJA USTED POR DIA?'
+            titleGraph = 'EN SU TRABAJO ACTUAL, ¿CUANTAS HORAS TRABAJA USTED POR DIA?'
+
+        # Construct the graph
+        #x = arange(0, 2*pi, 0.01)
+        #s = cos(x)**2
+        #plot(x, s)
+
+        #xlabel('xlabel(X)')
+        #ylabel('ylabel(Y)')
+        #title('Simple Graph!')
+        #grid(True)
+
+        mu, sigma = 10, 15
+        x = mu + sigma*np.random.randn(20)
+        #x = [0, 5, 20, 35, 50]
+
+        # x = datos
+        # alpha = claridad de la grafica
+        # facecolor = color
+
+        n, bins, patches = plt.hist(x, normed=1, facecolor='green', alpha=0.90)
+
+        # add a 'best fit' line
+        y = mlab.normpdf( bins, mu, sigma)
+        l = plt.plot(bins, y, 'r--', linewidth=1)
+
+        plt.xlabel(titleX)
+        plt.ylabel('Densidad')
+        plt.title(titleGraph)
+        #xmin, xmax, ymin, ymax (Direccion de los ejes)
+        #xmin = 0 siempre
+        #xmax = max cantidad en escala acorde a reporte
+        #ymin = 0 siempre.
+        #ymax = Varia acorde a reporte.
+        plt.axis([0, 50, 0, 0.10])
+        plt.grid(True)
+
+        # Store image in a string buffer
+        buffer = StringIO.StringIO()
+        canvas = pylab.get_current_fig_manager().canvas
+        canvas.draw()
+        pilImage = PIL.Image.frombytes("RGB", canvas.get_width_height(), canvas.tostring_rgb())
+        pilImage.save(buffer, "PNG")
+        pylab.close()
+
+        # Send buffer in a http response the the browser with the mime type image/png set
+        return HttpResponse(buffer.getvalue(), content_type="image/png")
 
 @csrf_exempt
 def employeeReport(request):
@@ -111,10 +193,6 @@ def painPresentedHowScore(score):
 def weekDurationPoint(score):
     if score == 0:
         return 5
-    else:
-        return 3
-
-def workedHoursPoint(workedHours):
     if workedHours >= 1 and workedHours <= 4:
         return 2
     elif workedHours >= 5 and workedHours <= 8:
@@ -203,7 +281,7 @@ def agePoint(age):
         return 1
     elif age >= 26 and age <= 35:
         return 2
-    elif age >= 26 and age <= 45:
+    elif age >= 36 and age <= 45:
         return 3
     elif age >= 46 and age <= 55:
         return 4
@@ -217,10 +295,275 @@ def genderPoint(gender):
         return 4
 
 @csrf_exempt
-def pieChart(request):
+def clusterReport(request):
     if request.method == "GET":
-        args = []
-        return render(request, "api/graps.html", args)
+        argsArray = []
+        title = ""
+        args = {"data": json.dumps(argsArray), "title": title}
+        return render(request, "api/cluster.html", args)
+
+
+@csrf_exempt
+def pieChart(request, ageReport, smokeReport):
+    if request.method == "GET":
+        argsArray = []
+        title = ""
+        workersDict = Worker.objects.all()
+        if int(ageReport) == 1:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            fifthGroup = []
+            for workerObject in workersDict:
+                agePointValue = agePoint(int(workerObject.age))
+                if agePointValue == 1:
+                    firstGroup.append(workerObject)
+                elif agePointValue == 2:
+                    secondGroup.append(workerObject)
+                elif agePointValue == 3:
+                    thirdGroup.append(workerObject)
+                elif agePointValue == 4:
+                    fourGroup.append(workerObject)
+                else:
+                    fifthGroup.append(workerObject)
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup) + len(fifthGroup)
+            argsArray.append({"label": "Entre 18 y 25", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 26 y 35", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 36 y 45", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 46 y 55", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "56 en adelante", "y": float((len(fifthGroup)*100)/universeAgeReport)})
+            title = "GRUPO DE EDAD"
+        elif int(ageReport) == 2:
+            workersDictRight = Worker.objects.filter(hand=1)
+            workersDictLeft = Worker.objects.filter(hand=0)
+            workersDictBoth = Worker.objects.filter(hand=2)
+            universeAgeReport = len(workersDictRight) + len(workersDictLeft) + len(workersDictBoth)
+            argsArray.append({"label": "Derecho", "y": float((len(workersDictRight)*100)/universeAgeReport)})
+            argsArray.append({"label": "Izquierdo", "y": float((len(workersDictLeft)*100)/universeAgeReport)})
+            argsArray.append({"label": "Ambos", "y": float((len(workersDictBoth)*100)/universeAgeReport)})
+            title = "USTED ES"
+        elif int(ageReport) == 3:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            fifthGroup = []
+            for workerObject in workersDict:
+                imc = float(workerObject.weight) / float(workerObject.height)
+                imcPointValue = imcPoint(round(imc,2))
+                if imcPointValue == 1:
+                    firstGroup.append(workerObject)
+                elif imcPointValue == 2:
+                    secondGroup.append(workerObject)
+                elif imcPointValue == 3:
+                    thirdGroup.append(workerObject)
+                elif imcPointValue == 4:
+                    fourGroup.append(workerObject)
+                else:
+                    fifthGroup.append(workerObject)
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup) + len(fifthGroup)
+            argsArray.append({"label": "Rango normal: 18,5 - 24,9", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Sobrepeso: 25 - 29,9", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Obesidad grado I: 30 - 34,9", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Obesidad grado II: 35 - 39,9", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Obesidad grado III > 40", "y": float((len(fifthGroup)*100)/universeAgeReport)})
+            title = "CLASIFICACION IMC"
+        elif int(ageReport) == 4:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            fifthGroup = []
+            for workerObject in workersDict:
+                agePointValue = yearsPoint(int(workerObject.yearsCompany))
+                if agePointValue == 1:
+                    firstGroup.append(workerObject)
+                elif agePointValue == 2:
+                    secondGroup.append(workerObject)
+                elif agePointValue == 3:
+                    thirdGroup.append(workerObject)
+                elif agePointValue == 4:
+                    fourGroup.append(workerObject)
+                else:
+                    fifthGroup.append(workerObject)
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup) + len(fifthGroup)
+            argsArray.append({"label": "Menor a un año", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 1 y 5 años", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 6 y 10 años", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Entre 11 y 15 años", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "16 años en adelante", "y": float((len(fifthGroup)*100)/universeAgeReport)})
+            title = "GRUPO DE ANTIGUEDAD EN EL CARGO"
+        elif int(ageReport) == 5:
+            workersNoSmoke = Worker.objects.filter(smoke=1)
+            workersYesSmoke = Worker.objects.filter(smoke=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Si", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "No", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "FUMA"
+        elif int(ageReport) == 6:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            for workerObject in workersDict:
+                agePointValue = cigarrettesQuantityPoint(workerObject.how_much_cigarettes)
+                if agePointValue == 3:
+                    firstGroup.append(workerObject)
+                elif agePointValue == 4:
+                    secondGroup.append(workerObject)
+                elif agePointValue == 5:
+                    thirdGroup.append(workerObject)
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup)
+            argsArray.append({"label": "1 a 5 cigarrillos", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "6 a 15 cigarrillos", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Más de 16 cigarrillos", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            title = "CIGARRILLOS FUMADOS AL DIA"
+        elif int(ageReport) == 7:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            fifthGroup = []
+            for workerObject in workersDict:
+                agePointValue = howMuchSmokePoint(workerObject.how_much_smoke)
+                if agePointValue == 1:
+                    firstGroup.append(workerObject)
+                elif agePointValue == 2:
+                    secondGroup.append(workerObject)
+                elif agePointValue == 3:
+                    thirdGroup.append(workerObject)
+                elif agePointValue == 4:
+                    fourGroup.append(workerObject)
+                else:
+                    fifthGroup.append(workerObject)
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup) + len(fifthGroup)
+            argsArray.append({"label": "Menos de un año", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "1 a 2 años", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "3 a 4 años", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "5 a 9 años", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "10 años en adelante", "y": float((len(fifthGroup)*100)/universeAgeReport)})
+            title = "HACE CUANTO TIEMPO FUMA"
+        elif int(ageReport) == 8:
+            workersNoSmoke = Worker.objects.filter(physical_activity_question=1)
+            workersYesSmoke = Worker.objects.filter(physical_activity_question=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Si", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "No", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "REALIZA ACTIVIDAD FISICA"
+        elif int(ageReport) == 9:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            for workerObject in workersDict:
+                agePointValue = frequencyPhysicalActivityPoint(int(workerObject.frequency))
+                if agePointValue == 5:
+                    firstGroup.append(workerObject)
+                elif agePointValue == 4:
+                    secondGroup.append(workerObject)
+                elif agePointValue == 3:
+                    thirdGroup.append(workerObject)
+                elif agePointValue == 2:
+                    fourGroup.append(workerObject)
+
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup)
+            argsArray.append({"label": "Diario", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Dos veces a la semana", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Tres veces a la semana", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Fines de semana", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            title = "FRECUENCIA ACTIVIDAD FISICA"
+        elif int(ageReport) == 10:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            for workerObject in workersDict:
+                if workerObject.duration:
+                    agePointValue = durationPhysicalActivityPoint(int(workerObject.duration))
+                    if agePointValue == 1:
+                        firstGroup.append(workerObject)
+                    elif agePointValue == 2:
+                        secondGroup.append(workerObject)
+                    elif agePointValue == 3:
+                        thirdGroup.append(workerObject)
+                    elif agePointValue == 4:
+                        fourGroup.append(workerObject)
+
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup)
+            argsArray.append({"label": "15 minutos", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "30 minutos", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "1 hora", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Más de una hora", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            title = "DURACIÓN ACTIVIDAD FISICA"
+        elif int(ageReport) == 11:
+            firstGroup = []
+            secondGroup = []
+            thirdGroup = []
+            fourGroup = []
+            for workerObject in workersDict:
+                if workerObject.how_much_hours_work:
+                    agePointValue = workedHoursPoint(int(workerObject.how_much_hours_work))
+                    if agePointValue == 2:
+                        firstGroup.append(workerObject)
+                    elif agePointValue == 3:
+                        secondGroup.append(workerObject)
+                    elif agePointValue == 4:
+                        thirdGroup.append(workerObject)
+                    elif agePointValue == 5:
+                        fourGroup.append(workerObject)
+
+            universeAgeReport = len(firstGroup) + len(secondGroup) + len(thirdGroup) + len(fourGroup)
+            argsArray.append({"label": "1 a 4 horas", "y": float((len(firstGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "5 a 8 horas", "y": float((len(secondGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "8 a 12 horas", "y": float((len(thirdGroup)*100)/universeAgeReport)})
+            argsArray.append({"label": "Más de 12 horas", "y": float((len(fourGroup)*100)/universeAgeReport)})
+            title = "HORAS DIARIAS TRABAJADAS"
+        elif int(ageReport) == 12:
+            workersNoSmoke = Worker.objects.filter(vialbility_job_journey=1)
+            workersYesSmoke = Worker.objects.filter(vialbility_job_journey=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Si", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "No", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "DURACIÓN DE SU TRABAJO ES VARIABLE"
+        elif int(ageReport) == 13:
+            workersNoSmoke = Worker.objects.filter(inconvenience_body=1)
+            workersYesSmoke = Worker.objects.filter(inconvenience_body=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Si", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "No", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "PRESENTA DOLOR, MOLESTIA O DISCONFORT EN ALGUNA PARTE DEL CUERPO"
+        elif int(ageReport) == 14:
+            workersNoSmoke = Worker.objects.filter(sickness=1)
+            workersYesSmoke = Worker.objects.filter(sickness=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Si", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "No", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "PRESENTA ALGUNA ENFERMEDAD ACTUALMENTE"
+        elif int(ageReport) == 15:
+            workersNoSmoke = Worker.objects.filter(gender=1)
+            workersYesSmoke = Worker.objects.filter(gender=0)
+            universeAgeReport = len(workersNoSmoke) + len(workersYesSmoke)
+            argsArray.append({"label": "Masculino", "y": float((len(workersYesSmoke)*100)/universeAgeReport)})
+            argsArray.append({"label": "Femenino", "y": float((len(workersNoSmoke)*100)/universeAgeReport)})
+            title = "SEXO"
+        elif int(ageReport) == 16:
+            for workerObject in workersDict:
+                workersDictInside = Worker.objects.filter(name=workerObject.name)
+                argsArray.append({"label": ""+workerObject.name+"", "y": float((len(workersDictInside)*100)/len(workersDict))})
+            title = "NOMBRE"
+        elif int(ageReport) == 17:
+            for workerObject in workersDict:
+                workersDictInside = Worker.objects.filter(lastname=workerObject.lastname)
+                argsArray.append({"label": ""+workerObject.lastname+"", "y": float((len(workersDictInside)*100)/len(workersDict))})
+            title = "APELLIDO"
+        elif int(ageReport) == 18:
+            for workerObject in workersDict:
+                workersDictInside = Worker.objects.filter(identification=workerObject.identification)
+                argsArray.append({"label": ""+workerObject.identification+"", "y": float((len(workersDictInside)*100)/len(workersDict))})
+            title = "IDENTIFICACION"
+
+        args = {"data": json.dumps(argsArray), "title": title}
+        return render(request, "api/graphs.html", args)
 
 @csrf_exempt
 def login(request):
